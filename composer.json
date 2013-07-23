@@ -1,8 +1,8 @@
 {
-  "name": "josegonzalez/upload",
+  "name": "simkimsia/upload-with-s3",
   "type": "cakephp-plugin",
-        "description": "CakePHP plugin to handle file uploading sans ridiculous automagic",
-  "homepage": "http://github.com/josegonzalez/upload",
+        "description": "Temporary fork from josegonzalez/upload for testing. CakePHP plugin to handle file uploading sans ridiculous automagic",
+  "homepage": "http://github.com/simkimsia/upload-with-s3",
   "license": "MIT",
   "require": {
     "php": ">=5.3.0",
