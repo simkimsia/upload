@@ -22,30 +22,30 @@ App::uses('UploadException', 'Upload.Lib/Error/Exception');
 class S3UploadBehavior extends ModelBehavior {
 
 	public $defaults = array(
-		'rootDir'			=> null,
+		'rootDir'		=> null,
 		'pathMethod'		=> 'primaryKey',
-		'path'				=> '{bucket}{DS}files{DS}{model}{DS}{field}{DS}',
-		'fields'			=> array('dir' => 'dir', 'type' => 'type', 'size' => 'size'),
-		'mimetypes'			=> array(),
+		'path'			=> 'files/{model}/{field}/',
+		'fields'		=> array('dir' => 'dir', 'type' => 'type', 'size' => 'size'),
+		'mimetypes'		=> array(),
 		'extensions'		=> array(),
-		'maxSize'			=> 2097152,
-		'minSize'			=> 8,
-		'maxHeight'			=> 0,
-		'minHeight'			=> 0,
-		'maxWidth'			=> 0,
-		'minWidth'			=> 0,
+		'maxSize'		=> 2097152,
+		'minSize'		=> 8,
+		'maxHeight'		=> 0,
+		'minHeight'		=> 0,
+		'maxWidth'		=> 0,
+		'minWidth'		=> 0,
 		'thumbnails'		=> true,
 		'thumbnailMethod'	=> 'imagick',
 		'thumbnailName'		=> null,
 		'thumbnailPath'		=> null,
-		'thumbnailPrefixStyle'=> true,
+		'thumbnailPrefixStyle'	=> true,
 		'thumbnailQuality'	=> 75,
 		'thumbnailSizes'	=> array(),
 		'thumbnailType'		=> false,
 		'deleteOnUpdate'	=> false,
-		'mediaThumbnailType'=> 'png',
-		'saveDir'			=> true,
-		'deleteFolderOnDelete' => false,
+		'mediaThumbnailType'	=> 'png',
+		'saveDir'		=> true,
+		'deleteFolderOnDelete'	=> false,
 	);
 
 	protected $_imageMimetypes = array(
@@ -103,7 +103,7 @@ class S3UploadBehavior extends ModelBehavior {
 			$this->_setupField($model, $field, $options);
 		}
 
-		$configFile = APP . 'Config' . DS . 'Upload' . DS . 'file_storages.ini';
+		$configFile = ROOT . DS . APP_DIR . DS . 'Config' . DS . 'Upload' . DS . 'file_storages.ini';
 		$ini_array = parse_ini_file($configFile, true);
 
 		if (isset($ini_array['S3'])) {
@@ -127,7 +127,6 @@ class S3UploadBehavior extends ModelBehavior {
 			$options = array();
 		}
 
-		$this->defaults['rootDir'] = ROOT . DS . APP_DIR . DS;
 		if (!isset($this->settings[$model->alias][$field])) {
 			$options = array_merge($this->defaults, (array) $options);
 
@@ -142,9 +141,6 @@ class S3UploadBehavior extends ModelBehavior {
 			// ENDHACK
 
 			$options['fields'] += $this->defaults['fields'];
-			if ($options['rootDir'] === null) {
-				$options['rootDir'] = $this->defaults['rootDir'];
-			}
 
 			if ($options['thumbnailName'] === null) {
 				if ($options['thumbnailPrefixStyle']) {
@@ -1184,7 +1180,7 @@ class S3UploadBehavior extends ModelBehavior {
 	public function _path(Model $model, $fieldName, $options = array()) {
 		$defaults = array(
 			'isThumbnail' => true,
-			'path' => '{ROOT}webroot{DS}files{DS}{model}{DS}{field}{DS}',
+			'path' => 'files/{model}/{field}/',
 			'rootDir' => $this->defaults['rootDir'],
 		);
 
@@ -1201,16 +1197,14 @@ class S3UploadBehavior extends ModelBehavior {
 		}
 
 		$replacements = array(
-			'{ROOT}'	=> $options['rootDir'],
 			'{primaryKey}'	=> $model->id,
 			'{model}'	=> Inflector::underscore($model->alias),
 			'{field}'	=> $fieldName,
 			'{time}'	=> time(),
 			'{microtime}'	=> microtime(),
-			'{DS}'		=> DIRECTORY_SEPARATOR,
-			'//'		=> DIRECTORY_SEPARATOR,
-			'/'			=> DIRECTORY_SEPARATOR,
-			'\\'		=> DIRECTORY_SEPARATOR,
+			'{DS}'		=> '/',
+			'//'		=> '/',
+			'\\'		=> '/',
 		);
 
 		$newPath = Folder::slashTerm(str_replace(
@@ -1219,14 +1213,6 @@ class S3UploadBehavior extends ModelBehavior {
 			$options['path']
 		));
 
-		if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-			if (!preg_match('/^([a-zA-Z]:\\\|\\\\)/', $newPath)) {
-				$newPath = $options['rootDir'] . $newPath;
-			}
-		} elseif ($newPath[0] !== DIRECTORY_SEPARATOR) {
-			$newPath = $options['rootDir'] . $newPath;
-		}
-
 		$pastPath = $newPath;
 		while (true) {
 			$pastPath = $newPath;
@@ -1234,7 +1220,7 @@ class S3UploadBehavior extends ModelBehavior {
 				'//',
 				'\\',
 				DIRECTORY_SEPARATOR . DIRECTORY_SEPARATOR
-			), DIRECTORY_SEPARATOR, $newPath);
+			), '/', $newPath);
 			if ($pastPath == $newPath) {
 				break;
 			}

@@ -35,3 +35,4 @@ before_script:
 
 script:
   - ./app/Console/cake test Upload Model/Behavior/Upload
+  - ./app/Console/cake test Upload Model/Behavior/S3Upload
