@@ -10,13 +10,13 @@ before_script:
   - sh -c "if [ '$DB' = 'mysql' ]; then mysql -e 'CREATE DATABASE cakephp_test;'; fi"
   - git clone --depth 1 git://github.com/cakephp/cakephp ../cakephp && cd ../cakephp && git checkout $CAKE_VERSION
   - cp -R ../upload app/Plugin/Upload
-  - echo '
+  - echo "
 {
-    "require": {
-        "aws/aws-sdk-php": "2.*"
+   \"require\"\: {
+        \"aws\/aws-sdk-php\"\: \"2.*\"
     }
 }
-  ' > ./app/composer.json
+  " > ./app/composer.json
   - cd app && composer install --dev --prefer-source --no-interaction && cd ..
   - echo "<?php
     class DATABASE_CONFIG {
