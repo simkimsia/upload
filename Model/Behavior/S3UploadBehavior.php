@@ -19,6 +19,7 @@
  */
 App::uses('Folder', 'Utility');
 App::uses('UploadException', 'Upload.Lib/Error/Exception');
+App::uses('S3UploadManager', 'Upload.Lib/FileStorage/S3');
 class S3UploadBehavior extends ModelBehavior {
 
 	public $defaults = array(
@@ -81,6 +82,13 @@ class S3UploadBehavior extends ModelBehavior {
 	public $fileStorageConfig;
 
 /**
+ * S3UploadManager instance
+ *
+ * @var S3UploadManager
+ */
+	public $uploadManager;
+
+/**
  * Runtime configuration for this behavior
  *
  * @var array
@@ -108,6 +116,9 @@ class S3UploadBehavior extends ModelBehavior {
 
 		if (isset($ini_array['S3'])) {
 			$this->fileStorageConfig = $ini_array['S3'];
+			// give the full path to the required S3bootstrap file
+			$this->fileStorageConfig['require'] = ROOT . DS . APP_DIR . DS . $this->fileStorageConfig['require'];
+			$this->uploadManager = new S3UploadManager($this->fileStorageConfig);
 		}
 	}
 
@@ -287,8 +298,8 @@ class S3UploadBehavior extends ModelBehavior {
 			$thumbnailPath = $this->settings[$model->alias][$field]['thumbnailPath'];
 
 			if (!empty($tempPath)) {
-				$path .= $tempPath . DS;
-				$thumbnailPath .= $tempPath . DS;
+				$path .= $tempPath . '/';
+				$thumbnailPath .= $tempPath . '/';
 			}
 			$tmp = $this->runtime[$model->alias][$field]['tmp_name'];
 			$filePath = $path . $model->data[$model->alias][$field];
@@ -323,7 +334,11 @@ class S3UploadBehavior extends ModelBehavior {
 	}
 
 	public function handleUploadedFile($modelAlias, $field, $tmp, $filePath) {
-		return is_uploaded_file($tmp) && @move_uploaded_file($tmp, $filePath);
+		return is_uploaded_file($tmp) && $this->moveUploadedFileToS3($tmp, $filePath);
+	}
+
+	protected function moveUploadedFileToS3($absPathToSrcFile, $keyInBucket) {
+		return $this->uploadManager->uploadFile($keyInBucket, $absPathToSrcFile);
 	}
 
 	public function unlink($file) {
@@ -1303,7 +1318,7 @@ class S3UploadBehavior extends ModelBehavior {
 		if (!strlen($data[$model->alias][$field])) return $this->__filesToRemove;
 
 		$dir = $data[$model->alias][$options['fields']['dir']];
-		$filePathDir = $this->settings[$model->alias][$field]['path'] . $dir . DS;
+		$filePathDir = $this->settings[$model->alias][$field]['path'] . $dir . '/';
 		$filePath = $filePathDir.$data[$model->alias][$field];
 		$pathInfo = $this->_pathinfo($filePath);
 

@@ -107,6 +107,33 @@ class S3UploadBehaviorTest extends CakeTestCase {
 		unset($this->TestUploadTwo);
 	}
 
+	function testSimpleUpload() {
+		$this->mockUpload();
+		$this->MockUpload->expects($this->once())->method('handleUploadedFile')->will($this->returnValue(true));
+		$this->MockUpload->expects($this->never())->method('unlink');
+		$this->MockUpload->expects($this->once())->method('handleUploadedFile')->with(
+			$this->TestUpload->alias,
+			'photo',
+			$this->data['test_ok']['photo']['tmp_name'],
+			$this->MockUpload->settings['TestUpload']['photo']['path'] . 2 . DS . $this->data['test_ok']['photo']['name']
+		);
+		$result = $this->TestUpload->save($this->data['test_ok']);
+		$this->assertInternalType('array', $result);
+		$newRecord = $this->TestUpload->findById($this->TestUpload->id);
+		$expectedRecord = array(
+			'TestUpload' => array(
+				'id' => 2,
+				'photo' => 'Photo.png',
+				'dir' => 2,
+				'type' => 'image/png',
+				'size' => 8192,
+				'other_field' => null
+			)
+		);
+
+		$this->assertEqual($expectedRecord, $newRecord);
+	}
+
 	function testReplacePath() {
 		$result = $this->TestUpload->Behaviors->S3Upload->_path($this->TestUpload, 'photo', array(
 			'path' => 'files/{model}\\{field}{DS}',
