@@ -1,5 +1,5 @@
 <?php
-App::uses('Upload.Upload', 'Model/Behavior');
+App::uses('Upload.S3Upload', 'Model/Behavior');
 App::uses('Folder', 'Utility');
 
 class TestUpload extends CakeTestModel {
@@ -439,8 +439,8 @@ class S3UploadBehaviorTest extends CakeTestCase {
 	}
 
 	function testIsValidMimeType() {
-		$this->TestUpload->Behaviors->detach('Upload.Upload');
-		$this->TestUpload->Behaviors->attach('Upload.Upload', array(
+		$this->TestUpload->Behaviors->detach('Upload.S3Upload');
+		$this->TestUpload->Behaviors->attach('Upload.S3Upload', array(
 			'photo' => array(
 				'mimetypes' => array('image/bmp', 'image/jpeg')
 			)
@@ -460,8 +460,8 @@ class S3UploadBehaviorTest extends CakeTestCase {
 		$this->assertEqual(1, count($this->TestUpload->validationErrors));
 		$this->assertEqual('isValidMimeType', current($this->TestUpload->validationErrors['photo']));
 
-		$this->TestUpload->Behaviors->detach('Upload.Upload');
-		$this->TestUpload->Behaviors->attach('Upload.Upload', array(
+		$this->TestUpload->Behaviors->detach('Upload.S3Upload');
+		$this->TestUpload->Behaviors->attach('Upload.S3Upload', array(
 			'photo' => array(
 				'mimetypes' => array('image/png', 'image/jpeg')
 			)
@@ -490,8 +490,8 @@ class S3UploadBehaviorTest extends CakeTestCase {
 	}
 
 	function testIsValidExtension() {
-		$this->TestUpload->Behaviors->detach('Upload.Upload');
-		$this->TestUpload->Behaviors->attach('Upload.Upload', array(
+		$this->TestUpload->Behaviors->detach('Upload.S3Upload');
+		$this->TestUpload->Behaviors->attach('Upload.S3Upload', array(
 			'photo' => array(
 				'extensions' => array('jpeg', 'bmp')
 			)
@@ -517,8 +517,8 @@ class S3UploadBehaviorTest extends CakeTestCase {
 		$this->assertTrue($this->TestUpload->validates());
 		$this->assertEqual(0, count($this->TestUpload->validationErrors));
 
-		$this->TestUpload->Behaviors->detach('Upload.Upload');
-		$this->TestUpload->Behaviors->attach('Upload.Upload', array(
+		$this->TestUpload->Behaviors->detach('Upload.S3Upload');
+		$this->TestUpload->Behaviors->attach('Upload.S3Upload', array(
 			'photo'
 		));
 
@@ -590,8 +590,8 @@ class S3UploadBehaviorTest extends CakeTestCase {
 		$this->assertEqual(1, count($this->TestUpload->validationErrors));
 		$this->assertEqual('isWritable', current($this->TestUpload->validationErrors['photo']));
 
-		$this->TestUpload->Behaviors->detach('Upload.Upload');
-		$this->TestUpload->Behaviors->attach('Upload.Upload', array(
+		$this->TestUpload->Behaviors->detach('Upload.S3Upload');
+		$this->TestUpload->Behaviors->attach('Upload.S3Upload', array(
 			'photo' => array(
 				'path' => TMP
 			)
@@ -631,8 +631,8 @@ class S3UploadBehaviorTest extends CakeTestCase {
 		$this->assertEqual(1, count($this->TestUpload->validationErrors));
 		$this->assertEqual('isValidDir', current($this->TestUpload->validationErrors['photo']));
 
-		$this->TestUpload->Behaviors->detach('Upload.Upload');
-		$this->TestUpload->Behaviors->attach('Upload.Upload', array(
+		$this->TestUpload->Behaviors->detach('Upload.S3Upload');
+		$this->TestUpload->Behaviors->attach('Upload.S3Upload', array(
 			'photo' => array(
 				'path' => TMP
 			)
@@ -657,8 +657,8 @@ class S3UploadBehaviorTest extends CakeTestCase {
 	}
 
 	function testIsImage() {
-		$this->TestUpload->Behaviors->detach('Upload.Upload');
-		$this->TestUpload->Behaviors->attach('Upload.Upload', array(
+		$this->TestUpload->Behaviors->detach('Upload.S3Upload');
+		$this->TestUpload->Behaviors->attach('Upload.S3Upload', array(
 			'photo' => array(
 				'mimetypes' => array('image/bmp', 'image/jpeg')
 			)
@@ -675,8 +675,8 @@ class S3UploadBehaviorTest extends CakeTestCase {
 	}
 
 	function testIsMedia() {
-		$this->TestUpload->Behaviors->detach('Upload.Upload');
-		$this->TestUpload->Behaviors->attach('Upload.Upload', array(
+		$this->TestUpload->Behaviors->detach('Upload.S3Upload');
+		$this->TestUpload->Behaviors->attach('Upload.S3Upload', array(
 			'pdf_file' => array(
 				'mimetypes' => array('application/pdf', 'application/postscript')
 			)
