@@ -134,6 +134,100 @@ class S3UploadBehaviorTest extends CakeTestCase {
 		$this->assertEqual($expectedRecord, $newRecord);
 	}
 
+	/**
+	 * Tests Upload::save creates a new Upload record including
+	 * an upload of an PNG image file using the Upload.S3Upload behavior
+	 * with the default path and pathMethod (primaryKey)
+	 */
+	public function testSaveSuccessPngDefaultPathAndPathMethod() {
+		$this->mockUpload();
+		$next_id = (1+$this->TestUploadTwo->field('id', array(), array('TestUploadTwo.id' => 'DESC')));
+		$destination_dir = APP . 'webroot' . DS . 'files' . DS . 'test_upload_two' . DS . 'photo' . DS . $next_id . DS;
+
+		$Upload = array(
+			'TestUploadTwo' => array(
+				'photo' => array(
+					'name' => 'image-png.png',
+					'type' => 'image/png',
+					'tmp_name' => 'image-png-tmp.png',
+					'error' => UPLOAD_ERR_OK,
+					'size' => 8123,
+				)
+			)
+		);
+
+		$this->MockUpload->expects($this->never())
+			->method('unlink');
+
+		$this->MockUpload->expects($this->once())
+			->method('handleUploadedFile')
+			->with(
+					$this->equalTo('TestUploadTwo'),
+					$this->equalTo('photo'),
+					$this->equalTo('image-png-tmp.png'),
+					$this->equalTo($destination_dir . 'image-png.png')
+			)
+			->will($this->returnValue(true));
+
+		$this->MockUpload->expects($this->once())
+			->method('_createThumbnails')
+			->with(
+					$this->isInstanceOf('TestUploadTwo'),
+					$this->equalTo('photo'),
+					$this->equalTo($destination_dir),
+					$this->equalTo($destination_dir)
+			)
+			->will($this->returnValue(true));
+
+		$this->assertTrue(false !== $this->TestUploadTwo->save($Upload));
+		$this->assertSame(array(), array_keys($this->TestUploadTwo->validationErrors));
+
+		$this->assertSame('image-png.png', $this->TestUploadTwo->field('photo', array('TestUploadTwo.id' => $next_id)));
+		$this->assertSame('image/png', $this->TestUploadTwo->field('type', array('TestUploadTwo.id' => $next_id)));
+		$this->assertSame((string)$next_id, $this->TestUploadTwo->field('dir', array('TestUploadTwo.id' => $next_id)));
+	}
+
+	function testDeleteOnUpdate() {
+		$this->TestUpload->actsAs['Upload.S3Upload']['photo']['deleteOnUpdate'] = true;
+		$this->mockUpload();
+		$this->MockUpload->expects($this->once())->method('handleUploadedFile')->will($this->returnValue(true));
+		$this->MockUpload->expects($this->once())->method('unlink')->will($this->returnValue(true));
+
+		$existingRecord = $this->TestUpload->findById($this->data['test_update']['id']);
+		$this->MockUpload->expects($this->once())->method('unlink')->with(
+			$this->MockUpload->settings['TestUpload']['photo']['path'] . $existingRecord['TestUpload']['dir'] . DS . $existingRecord['TestUpload']['photo']
+		);
+		$this->MockUpload->expects($this->once())->method('handleUploadedFile')->with(
+			$this->TestUpload->alias,
+			'photo',
+			$this->data['test_update']['photo']['tmp_name'],
+			$this->MockUpload->settings['TestUpload']['photo']['path'] . $this->data['test_update']['id'] . DS . $this->data['test_update']['photo']['name']
+		);
+		$result = $this->TestUpload->save($this->data['test_update']);
+		$this->assertInternalType('array', $result);
+	}
+
+	function testDeleteOnUpdateWithoutNewUpload() {
+		$this->TestUpload->actsAs['Upload.S3Upload']['photo']['deleteOnUpdate'] = true;
+		$this->mockUpload();
+		$this->MockUpload->expects($this->never())->method('unlink');
+		$this->MockUpload->expects($this->never())->method('handleUploadedFile');
+		$result = $this->TestUpload->save($this->data['test_update_other_field']);
+		$this->assertInternalType('array', $result);
+		$newRecord = $this->TestUpload->findById($this->TestUpload->id);
+		$this->assertEqual($this->data['test_update_other_field']['other_field'], $newRecord['TestUpload']['other_field']);
+	}
+
+	function testUpdateWithoutNewUpload() {
+		$this->mockUpload();
+		$this->MockUpload->expects($this->never())->method('unlink');
+		$this->MockUpload->expects($this->never())->method('handleUploadedFile');
+		$result = $this->TestUpload->save($this->data['test_update_other_field']);
+		$this->assertInternalType('array', $result);
+		$newRecord = $this->TestUpload->findById($this->TestUpload->id);
+		$this->assertEqual($this->data['test_update_other_field']['other_field'], $newRecord['TestUpload']['other_field']);
+	}
+
 	function testUnlinkFileOnDelete() {
 		$this->mockUpload();
 		$this->MockUpload->expects($this->once())->method('unlink')->will($this->returnValue(true));
@@ -664,13 +758,13 @@ class S3UploadBehaviorTest extends CakeTestCase {
 			)
 		));
 
-		$result = $this->TestUpload->Behaviors->Upload->_isImage($this->TestUpload, 'image/bmp');
+		$result = $this->TestUpload->Behaviors->S3Upload->_isImage($this->TestUpload, 'image/bmp');
 		$this->assertTrue($result);
 
-		$result = $this->TestUpload->Behaviors->Upload->_isImage($this->TestUpload, 'image/jpeg');
+		$result = $this->TestUpload->Behaviors->S3Upload->_isImage($this->TestUpload, 'image/jpeg');
 		$this->assertTrue($result);
 
-		$result = $this->TestUpload->Behaviors->Upload->_isImage($this->TestUpload, 'application/zip');
+		$result = $this->TestUpload->Behaviors->S3Upload->_isImage($this->TestUpload, 'application/zip');
 		$this->assertFalse($result);
 	}
 
@@ -682,22 +776,22 @@ class S3UploadBehaviorTest extends CakeTestCase {
 			)
 		));
 
-		$result = $this->TestUpload->Behaviors->Upload->_isMedia($this->TestUpload, 'application/pdf');
+		$result = $this->TestUpload->Behaviors->S3Upload->_isMedia($this->TestUpload, 'application/pdf');
 		$this->assertTrue($result);
 
-		$result = $this->TestUpload->Behaviors->Upload->_isMedia($this->TestUpload, 'application/postscript');
+		$result = $this->TestUpload->Behaviors->S3Upload->_isMedia($this->TestUpload, 'application/postscript');
 		$this->assertTrue($result);
 
-		$result = $this->TestUpload->Behaviors->Upload->_isMedia($this->TestUpload, 'application/zip');
+		$result = $this->TestUpload->Behaviors->S3Upload->_isMedia($this->TestUpload, 'application/zip');
 		$this->assertFalse($result);
 
-		$result = $this->TestUpload->Behaviors->Upload->_isMedia($this->TestUpload, 'image/jpeg');
+		$result = $this->TestUpload->Behaviors->S3Upload->_isMedia($this->TestUpload, 'image/jpeg');
 		$this->assertFalse($result);
 	}
 
 	function testGetPathFlat() {
 		$basePath = 'tests' . DS . 'path' . DS . 'flat' . DS;
-		$result = $this->TestUpload->Behaviors->Upload->_getPathFlat($this->TestUpload, 'photo', TMP . $basePath);
+		$result = $this->TestUpload->Behaviors->S3Upload->_getPathFlat($this->TestUpload, 'photo', TMP . $basePath);
 
 		$this->assertInternalType('string', $result);
 		$this->assertEqual(0, strlen($result));
@@ -706,7 +800,7 @@ class S3UploadBehaviorTest extends CakeTestCase {
 	function testGetPathPrimaryKey() {
 		$this->TestUpload->id = 5;
 		$basePath = 'tests' . DS . 'path' . DS . 'primaryKey' . DS;
-		$result = $this->TestUpload->Behaviors->Upload->_getPathPrimaryKey($this->TestUpload, 'photo', TMP . $basePath);
+		$result = $this->TestUpload->Behaviors->S3Upload->_getPathPrimaryKey($this->TestUpload, 'photo', TMP . $basePath);
 
 		$this->assertInternalType('integer', $result);
 		$this->assertEqual(1, strlen($result));
@@ -716,7 +810,7 @@ class S3UploadBehaviorTest extends CakeTestCase {
 
 	function testGetPathRandom() {
 		$basePath = 'tests' . DS . 'path' . DS . 'random' . DS;
-		$result = $this->TestUpload->Behaviors->Upload->_getPathRandom($this->TestUpload, 'photo', TMP . $basePath);
+		$result = $this->TestUpload->Behaviors->S3Upload->_getPathRandom($this->TestUpload, 'photo', TMP . $basePath);
 
 		$this->assertInternalType('string', $result);
 		$this->assertEqual(8, strlen($result));
