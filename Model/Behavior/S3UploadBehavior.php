@@ -334,15 +334,15 @@ class S3UploadBehavior extends ModelBehavior {
 	}
 
 	public function handleUploadedFile($modelAlias, $field, $tmp, $filePath) {
-		return is_uploaded_file($tmp) && $this->moveUploadedFileToS3($tmp, $filePath);
+		return is_uploaded_file($tmp) && $this->_moveUploadedFileToS3($tmp, $filePath);
 	}
 
-	protected function moveUploadedFileToS3($absPathToSrcFile, $keyInBucket) {
+	protected function _moveUploadedFileToS3($absPathToSrcFile, $keyInBucket) {
 		return $this->uploadManager->uploadFile($keyInBucket, $absPathToSrcFile);
 	}
 
-	public function unlink($file) {
-		return @unlink($file);
+	public function unlink($keyInBucket) {
+		return $this->uploadManager->deleteFile($keyInBucket);
 	}
 
 	public function deleteFolder($model, $path) {
@@ -1384,7 +1384,7 @@ class S3UploadBehavior extends ModelBehavior {
 				'geometry', 'size', 'thumbnailPath'
 			));
 
-			$thumbnailFilePath = "{$thumbnailPath}{$dir}{$DS}{$fileName}.{$thumbnailType}";
+			$thumbnailFilePath = "{$thumbnailPath}{$dir}/{$fileName}.{$thumbnailType}";
 			$this->__filesToRemove[$model->alias][] = $thumbnailFilePath;
 		}
 		return $this->__filesToRemove;

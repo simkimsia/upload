@@ -53,4 +53,16 @@ class S3UploadManager {
 		return true;
 	}
 
+	public function deleteFile($key) {
+		// Upload an object by streaming the contents of a file
+		// $pathToFile should be absolute path to a file on disk
+		$result = $this->client->deleteObject(array(
+			'Bucket'     => $this->bucket,
+			'Key'        => $key
+		));
+
+		// public read is https://bucketname.s3.amazonaws.com/path/to/file.png
+		return true;
+	}
+
 }

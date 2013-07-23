@@ -134,6 +134,18 @@ class S3UploadBehaviorTest extends CakeTestCase {
 		$this->assertEqual($expectedRecord, $newRecord);
 	}
 
+	function testUnlinkFileOnDelete() {
+		$this->mockUpload();
+		$this->MockUpload->expects($this->once())->method('unlink')->will($this->returnValue(true));
+		$existingRecord = $this->TestUpload->findById($this->data['test_update']['id']);
+		$this->MockUpload->expects($this->once())->method('unlink')->with(
+			$this->MockUpload->settings['TestUpload']['photo']['path'] . $existingRecord['TestUpload']['dir'] . DS . $existingRecord['TestUpload']['photo']
+		);
+		$result = $this->TestUpload->delete($this->data['test_update']['id']);
+		$this->assertTrue($result);
+		$this->assertEmpty($this->TestUpload->findById($this->data['test_update']['id']));
+	}
+
 	function testReplacePath() {
 		$result = $this->TestUpload->Behaviors->S3Upload->_path($this->TestUpload, 'photo', array(
 			'path' => 'files/{model}\\{field}{DS}',
