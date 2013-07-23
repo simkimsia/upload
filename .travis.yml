@@ -32,7 +32,8 @@ before_script:
       'encoding' => 'utf8'
     );
     }" > ./app/Config/database.php
-  - cp app/Plugin/Upload/Config/file_storages.ini.sample app/Config/Upload/file_storages.ini
+
+  - mkdir ./app/Config/Upload && cp ./app/Plugin/Upload/Config/file_storages.ini.sample ./app/Config/Upload/file_storages.ini
 
 script:
   - ./app/Console/cake test Upload Model/Behavior/Upload
