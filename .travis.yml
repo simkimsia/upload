@@ -4,7 +4,7 @@ php:
   - 5.3
 
 env:
-  - CAKE_VERSION=master DB=mysql AWS_VERSION=2.*
+  - CAKE_VERSION=master DB=mysql
 
 before_script:
   - sh -c "if [ '$DB' = 'mysql' ]; then mysql -e 'CREATE DATABASE cakephp_test;'; fi"
