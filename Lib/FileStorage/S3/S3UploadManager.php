@@ -33,7 +33,21 @@ class S3UploadManager {
 		}
 	}
 
-	public function uploadFile($key, $absPathToFile, $acl = 'public-read') {
+	public function uploadFile($key, $absPathToFile, $options = array()) {
+		$defaults = array(
+			'acl' => 'public-read',
+		);
+		$options = array_merge($defaults, $options);
+
+		if (!isset($options['mimetype'])) {
+			$finfo = new finfo(FILEINFO_MIME); // return mime type ala mimetype extension
+
+			/* get mime-type for a specific file */
+			$options['mimetype'] = $finfo->file($absPathToFile);
+		}
+
+		extract($options, EXTR_OVERWRITE);
+
 		// Upload an object by streaming the contents of a file
 		// $pathToFile should be absolute path to a file on disk
 		$result = $this->client->putObject(array(
@@ -41,6 +55,7 @@ class S3UploadManager {
 			'Key'        => $key,
 			'SourceFile' => $absPathToFile,
 			'ACL'           => $acl,
+			'ContentType'  => $mimetype
 		));
 
 		// We can poll the object until it is accessible
