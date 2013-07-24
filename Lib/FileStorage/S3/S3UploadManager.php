@@ -65,4 +65,44 @@ class S3UploadManager {
 		return true;
 	}
 
+	public function isWritable($key) {
+		try {
+			$result = $this->client->getObjectAcl(array(
+				'Bucket'     => $this->bucket,
+				'Key'        => $key
+			));
+			// still waiting for https://github.com/aws/aws-sdk-php/issues/121
+			// so just return true
+			// HACK!
+			return true;
+			// end of HACK!
+		} catch(Aws\S3\Exception\NoSuchKeyException $e) {
+			// still waiting for https://github.com/aws/aws-sdk-php/issues/121
+			// so just deliberately write stuff in
+			// HACK!
+			$result = $this->client->putObject(array(
+			'Bucket'     => $this->bucket,
+			'Key'        => $key,
+			'Body' => 'test!',
+			'ACL'           => 'public-read',
+			));
+
+			// We can poll the object until it is accessible
+			$this->client->waitUntilObjectExists(array(
+			'Bucket' => $this->bucket,
+			'Key'    => $key
+			));
+
+			$result = $this->client->doesObjectExist($this->bucket, $key);
+			if ($result) {
+				$this->deleteFile($key);
+				return true;
+			} else {
+				return false;
+			}
+			// end of HACK!
+		}
+		return false;
+	}
+
 }

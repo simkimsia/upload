@@ -104,21 +104,34 @@ class S3UploadBehavior extends ModelBehavior {
  * @access public
  */
 	public function setup(Model $model, $config = array()) {
-		if (isset($this->settings[$model->alias])) return;
-		$this->settings[$model->alias] = array();
+		try {
+			if (isset($this->settings[$model->alias])) return;
+			$this->settings[$model->alias] = array();
 
-		foreach ($config as $field => $options) {
-			$this->_setupField($model, $field, $options);
-		}
+			foreach ($config as $field => $options) {
+				$this->_setupField($model, $field, $options);
+			}
 
-		$configFile = ROOT . DS . APP_DIR . DS . 'Config' . DS . 'Upload' . DS . 'file_storages.ini';
-		$ini_array = parse_ini_file($configFile, true);
+			$configFile = ROOT . DS . APP_DIR . DS . 'Config' . DS . 'Upload' . DS . 'file_storages.ini';
+			$ini_array = parse_ini_file($configFile, true);
 
-		if (isset($ini_array['S3'])) {
-			$this->fileStorageConfig = $ini_array['S3'];
-			// give the full path to the required S3bootstrap file
-			$this->fileStorageConfig['require'] = ROOT . DS . APP_DIR . DS . $this->fileStorageConfig['require'];
-			$this->uploadManager = new S3UploadManager($this->fileStorageConfig);
+			if (!file_exists($configFile)) {
+				throw new Exception("Missing config file. Expected $configFile");
+			}
+
+			if (isset($ini_array['S3'])) {
+				$this->fileStorageConfig = $ini_array['S3'];
+				// give the full path to the required S3bootstrap file
+				if(!isset($this->fileStorageConfig['require'])) {
+					throw new Exception("Missing require key in S3");
+				}
+				$this->fileStorageConfig['require']	= ROOT . DS . APP_DIR . DS . $this->fileStorageConfig['require'];
+				$this->uploadManager			= new S3UploadManager($this->fileStorageConfig);
+			} else {
+				throw new Exception("Missing S3 in config in $configFile");
+			}
+		} catch (Exception $e) {
+			$this->log($e->getMessage(), 'upload');
 		}
 	}
 
@@ -622,8 +635,9 @@ class S3UploadBehavior extends ModelBehavior {
 		if (!$requireUpload && $check[$field]['error'] === UPLOAD_ERR_NO_FILE) {
 			return true;
 		}
+		$result = $this->uploadManager->isWritable($this->settings[$model->alias][$field]['path']);
 
-		return is_writable($this->settings[$model->alias][$field]['path']);
+		return $result;
 	}
 
 /**
