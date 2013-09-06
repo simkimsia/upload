@@ -1,7 +1,38 @@
-[S3]
-key = ''
-secret = ''
-bucket = ''
-require = 'Vendor/autoload.php'
+[General]
+use = LIVE
 
-[Dropbox]
+[LIVE]
+s3[key] = some_key
+s3[secret] = some_secret
+s3[bucket] = some-bucket
+s3[require] = Vendor/somefile.php
+s3[username] = some_username
+
+dropbox[] = ''
+
+webroot[] = ''
+
+[STAGE]
+s3[key] = some_key
+s3[secret] = some_secret
+s3[bucket] = some-bucket
+s3[require] = Vendor/somefile.php
+s3[username] = some_username
+
+dropbox[] = ''
+
+webroot[] = ''
+
+
+[DEV]
+s3[key] = some_key
+s3[secret] = some_secret
+s3[bucket] = some-bucket
+s3[require] = Vendor/somefile.php
+s3[username] = some_username
+
+dropbox[] = ''
+
+webroot[] = ''
+
+

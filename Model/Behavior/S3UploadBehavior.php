@@ -75,11 +75,31 @@ class S3UploadBehavior extends ModelBehavior {
 	protected $_removingOnly = array();
 
 /**
- * FileStorage configuration for this behavior
+ * All FileStorage configurations in the config file
+ *
+ * @var array
+ */
+	public $allFileStoragesConfig;
+
+/**
+ * Configuration for only this particular filestorage
  *
  * @var array
  */
 	public $fileStorageConfig;
+
+/**
+ * Expected file storage config keys
+ *
+ * @var array
+ */
+	public $fileStorageConfigKeys = array(
+		'key',
+		'secret', 
+		'bucket', 
+		'require', 
+		'username', 
+	);
 
 /**
  * S3UploadManager instance
@@ -112,27 +132,56 @@ class S3UploadBehavior extends ModelBehavior {
 				$this->_setupField($model, $field, $options);
 			}
 
-			$configFile = ROOT . DS . APP_DIR . DS . 'Config' . DS . 'Upload' . DS . 'file_storages.ini';
-			$ini_array = parse_ini_file($configFile, true);
+			$this->_validateConfigFile();
 
-			if (!file_exists($configFile)) {
-				throw new Exception("Missing config file. Expected $configFile");
-			}
-
-			if (isset($ini_array['S3'])) {
-				$this->fileStorageConfig = $ini_array['S3'];
-				// give the full path to the required S3bootstrap file
-				if(!isset($this->fileStorageConfig['require'])) {
-					throw new Exception("Missing require key in S3");
-				}
-				$this->fileStorageConfig['require']	= ROOT . DS . APP_DIR . DS . $this->fileStorageConfig['require'];
-				$this->uploadManager			= new S3UploadManager($this->fileStorageConfig);
+			$this->fileStorageConfig['require']	= ROOT . DS . APP_DIR . DS . $this->fileStorageConfig['require'];
+			$this->uploadManager			= new S3UploadManager($this->fileStorageConfig);
 			} else {
 				throw new Exception("Missing S3 in config in $configFile");
 			}
 		} catch (Exception $e) {
 			$this->log($e->getMessage(), 'upload');
 		}
+	}
+
+	protected function _validateConfigFile() {
+		$configFile = ROOT . DS . APP_DIR . DS . 'Config' . DS . 'Upload' . DS . 'file_storages.ini';
+
+		if (!file_exists($configFile)) {
+			throw new Exception("Missing config file. Expected $configFile");
+		}
+
+		$ini_array = parse_ini_file($configFile, true);
+
+		if (!isset($ini_array['General'])) {
+			throw new Exception("Missing the settings for General in $configFile");
+		}
+
+		if (!isset($ini_array['General']['use'])) {
+			throw new Exception("Missing `use` key for General settings in $configFile");
+		}
+
+		$environment = $ini_array['General']['use'];
+		if (!isset($ini_array[$environment])) {
+			throw new Exception("Missing $environment settings in $configFile");
+		}
+
+		if (!isset($ini_array[$environment]['s3'])) {
+			throw new Exception("Missing `s3` key in $environment settings in $configFile");
+		}
+
+		if (!isset($ini_array[$environment]['s3'])) {
+			throw new Exception("Missing `s3` key in $environment settings in $configFile");
+		}
+
+		$allKeysValid = ArrayLib::checkIfKeysExist($ini_array[$environment]['s3'], $this->fileStorageConfigKeys, $missingKeys);
+
+		if (!$allKeysValid) {
+			$missingKeysInString = implode(",", $missingKeys);
+			throw new Exception("Missing keys in $environment s3 settings in $configFile: $missingKeysInString");
+		}
+		$this->allFileStoragesConfig = $ini_array;
+		$this->fileStorageConfig = $ini_array[$environment]['s3'];
 	}
 
 /**
