@@ -136,9 +136,6 @@ class S3UploadBehavior extends ModelBehavior {
 
 			$this->fileStorageConfig['require']	= ROOT . DS . APP_DIR . DS . $this->fileStorageConfig['require'];
 			$this->uploadManager			= new S3UploadManager($this->fileStorageConfig);
-			} else {
-				throw new Exception("Missing S3 in config in $configFile");
-			}
 		} catch (Exception $e) {
 			$this->log($e->getMessage(), 'upload');
 		}
