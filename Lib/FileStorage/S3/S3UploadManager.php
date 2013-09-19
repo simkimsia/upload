@@ -12,7 +12,7 @@ class S3UploadManager {
 
 	public $bucket;
 
-	public $require = '../../../../../Vendor/autoload.php';
+	public $require = 'Vendor/autoload.php';
 
 	public function __construct($settings = array()) {
 		$this->settings = $settings;
@@ -66,6 +66,22 @@ class S3UploadManager {
 
 		// public read is https://bucketname.s3.amazonaws.com/path/to/file.png
 		return true;
+	}
+
+	// read http://docs.aws.amazon.com/aws-sdk-php-2/latest/class-Aws.S3.S3Client.html#_getObject
+	public function downloadFile($key, $absPathToFile) {
+		// Upload an object by streaming the contents of a file
+		// $pathToFile should be absolute path to a file on disk
+		$result = $this->client->getObject(array(
+			'Bucket'     => $this->bucket,
+			'Key'        => $key,
+			'SaveAs' => $absPathToFile,
+		));
+
+		// Contains an EntityBody that wraps a file resource of /tmp/data.txt
+		// echo $result['Body']->getUri() . "\n";
+		// > /tmp/data.txt
+		return $result;
 	}
 
 	public function deleteFile($key) {
