@@ -18,6 +18,7 @@
  * @license       MIT License (http://www.opensource.org/licenses/mit-license.php)
  */
 App::uses('Folder', 'Utility');
+App::uses('ArrayLib', 'UtilityLib.Lib');
 App::uses('UploadException', 'Upload.Lib/Error/Exception');
 App::uses('S3UploadManager', 'Upload.Lib/FileStorage/S3');
 class S3UploadBehavior extends ModelBehavior {
