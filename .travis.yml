@@ -5,6 +5,7 @@ php:
 
 env:
   - CAKE_VERSION=master DB=mysql
+  - php /home/travis/.phpenv/versions/5.3.26/bin/composer.phar self-update
 
 before_script:
   - sh -c "if [ '$DB' = 'mysql' ]; then mysql -e 'CREATE DATABASE cakephp_test;'; fi"
