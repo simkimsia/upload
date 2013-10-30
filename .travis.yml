@@ -22,6 +22,10 @@ matrix:
       env:
         - DB=mysql CAKE_VERSION=master PHPCS=1
 
+branches:
+  only:
+    - upload-s3-behavior
+
 before_install:
   - php /home/travis/.phpenv/versions/5.3.26/bin/composer.phar self-update
 
