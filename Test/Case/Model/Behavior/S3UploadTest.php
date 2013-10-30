@@ -2,7 +2,7 @@
 App::uses('Upload.S3Upload', 'Model/Behavior');
 App::uses('Folder', 'Utility');
 
-class TestUpload extends CakeTestModel {
+class TestS3Upload extends CakeTestModel {
 	public $useTable = 'uploads';
 	public $actsAs = array(
 		'Upload.S3Upload' => array(
@@ -14,7 +14,7 @@ class TestUpload extends CakeTestModel {
 	);
 }
 
-class TestUploadTwo extends CakeTestModel {
+class TestS3UploadTwo extends CakeTestModel {
 	public $useTable = 'uploads';
 	public $actsAs = array(
 		'Upload.S3Upload' => array(
@@ -39,14 +39,14 @@ class TestUploadTwo extends CakeTestModel {
 class S3UploadBehaviorTest extends CakeTestCase {
 
 	public $fixtures = array('plugin.upload.upload');
-	public $TestUpload = null;
+	public $TestS3Upload = null;
 	public $MockUpload = null;
 	public $data = array();
 	public $currentTestMethod;
 
 	function startTest($method) {
-		$this->TestUpload = ClassRegistry::init('TestUpload');
-		$this->TestUploadTwo = ClassRegistry::init('TestUploadTwo');
+		$this->TestS3Upload = ClassRegistry::init('TestS3Upload');
+		$this->TestS3UploadTwo = ClassRegistry::init('TestS3UploadTwo');
 		$this->currentTestMethod = $method;
 		$this->data['test_ok'] = array(
 			'photo' => array(
@@ -91,20 +91,20 @@ class S3UploadBehaviorTest extends CakeTestCase {
 		$this->MockUpload = $this->getMock('S3UploadBehavior', $methods);
 
 
-		$this->MockUpload->setup($this->TestUpload, $this->TestUpload->actsAs['Upload.S3Upload']);
-		$this->TestUpload->Behaviors->set('S3Upload', $this->MockUpload);
+		$this->MockUpload->setup($this->TestS3Upload, $this->TestS3Upload->actsAs['Upload.S3Upload']);
+		$this->TestS3Upload->Behaviors->set('S3Upload', $this->MockUpload);
 
-		$this->MockUpload->setup($this->TestUploadTwo, $this->TestUploadTwo->actsAs['Upload.S3Upload']);
-		$this->TestUploadTwo->Behaviors->set('S3Upload', $this->MockUpload);
+		$this->MockUpload->setup($this->TestS3UploadTwo, $this->TestS3UploadTwo->actsAs['Upload.S3Upload']);
+		$this->TestS3UploadTwo->Behaviors->set('S3Upload', $this->MockUpload);
 	}
 
 	function endTest($method) {
 		$folder = new Folder(TMP);
-		$folder->delete(ROOT . DS . APP_DIR . DS . 'webroot' . DS . 'files' . DS . 'test_upload');
+		$folder->delete(ROOT . DS . APP_DIR . DS . 'webroot' . DS . 'files' . DS . 'test_s3_upload');
 		$folder->delete(ROOT . DS . APP_DIR . DS . 'tmp' . DS . 'tests' . DS . 'path');
 		Classregistry::flush();
-		unset($this->TestUpload);
-		unset($this->TestUploadTwo);
+		unset($this->TestS3Upload);
+		unset($this->TestS3UploadTwo);
 	}
 
 	function testSimpleUpload() {
@@ -112,19 +112,19 @@ class S3UploadBehaviorTest extends CakeTestCase {
 		$this->MockUpload->expects($this->once())->method('handleUploadedFile')->will($this->returnValue(true));
 		$this->MockUpload->expects($this->never())->method('unlink');
 		$this->MockUpload->expects($this->once())->method('handleUploadedFile')->with(
-			$this->TestUpload->alias,
+			$this->TestS3Upload->alias,
 			'photo',
 			$this->data['test_ok']['photo']['tmp_name'],
-			$this->MockUpload->settings['TestUpload']['photo']['path'] . 2 . '/' . $this->data['test_ok']['photo']['name']
+			$this->MockUpload->settings['TestS3Upload']['photo']['path'] . 3 . '/' . $this->data['test_ok']['photo']['name']
 		);
-		$result = $this->TestUpload->save($this->data['test_ok']);
+		$result = $this->TestS3Upload->save($this->data['test_ok']);
 		$this->assertInternalType('array', $result);
-		$newRecord = $this->TestUpload->findById($this->TestUpload->id);
+		$newRecord = $this->TestS3Upload->findById($this->TestS3Upload->id);
 		$expectedRecord = array(
-			'TestUpload' => array(
-				'id' => 2,
+			'TestS3Upload' => array(
+				'id' => 3,
 				'photo' => 'Photo.png',
-				'dir' => 2,
+				'dir' => 3,
 				'type' => 'image/png',
 				'size' => 8192,
 				'other_field' => null
@@ -141,11 +141,11 @@ class S3UploadBehaviorTest extends CakeTestCase {
 	 */
 	public function testSaveSuccessPngDefaultPathAndPathMethod() {
 		$this->mockUpload();
-		$next_id = (1+$this->TestUploadTwo->field('id', array(), array('TestUploadTwo.id' => 'DESC')));
-		$destination_dir = 'files/test_upload_two/photo/' .  $next_id . '/';
+		$next_id = (1+$this->TestS3UploadTwo->field('id', array(), array('TestS3UploadTwo.id' => 'DESC')));
+		$destination_dir = 'files/test_s3_upload_two/photo/' .  $next_id . '/';
 
 		$Upload = array(
-			'TestUploadTwo' => array(
+			'TestS3UploadTwo' => array(
 				'photo' => array(
 					'name' => 'image-png.png',
 					'type' => 'image/png',
@@ -162,7 +162,7 @@ class S3UploadBehaviorTest extends CakeTestCase {
 		$this->MockUpload->expects($this->once())
 			->method('handleUploadedFile')
 			->with(
-					$this->equalTo('TestUploadTwo'),
+					$this->equalTo('TestS3UploadTwo'),
 					$this->equalTo('photo'),
 					$this->equalTo('image-png-tmp.png'),
 					$this->equalTo($destination_dir . 'image-png.png')
@@ -172,72 +172,72 @@ class S3UploadBehaviorTest extends CakeTestCase {
 		$this->MockUpload->expects($this->once())
 			->method('_createThumbnails')
 			->with(
-					$this->isInstanceOf('TestUploadTwo'),
+					$this->isInstanceOf('TestS3UploadTwo'),
 					$this->equalTo('photo'),
 					$this->equalTo($destination_dir),
 					$this->equalTo($destination_dir)
 			)
 			->will($this->returnValue(true));
 
-		$this->assertTrue(false !== $this->TestUploadTwo->save($Upload));
-		$this->assertSame(array(), array_keys($this->TestUploadTwo->validationErrors));
+		$this->assertTrue(false !== $this->TestS3UploadTwo->save($Upload));
+		$this->assertSame(array(), array_keys($this->TestS3UploadTwo->validationErrors));
 
-		$this->assertSame('image-png.png', $this->TestUploadTwo->field('photo', array('TestUploadTwo.id' => $next_id)));
-		$this->assertSame('image/png', $this->TestUploadTwo->field('type', array('TestUploadTwo.id' => $next_id)));
-		$this->assertSame((string)$next_id, $this->TestUploadTwo->field('dir', array('TestUploadTwo.id' => $next_id)));
+		$this->assertSame('image-png.png', $this->TestS3UploadTwo->field('photo', array('TestS3UploadTwo.id' => $next_id)));
+		$this->assertSame('image/png', $this->TestS3UploadTwo->field('type', array('TestS3UploadTwo.id' => $next_id)));
+		$this->assertSame((string)$next_id, $this->TestS3UploadTwo->field('dir', array('TestS3UploadTwo.id' => $next_id)));
 	}
 
 	function testDeleteOnUpdate() {
-		$this->TestUpload->actsAs['Upload.S3Upload']['photo']['deleteOnUpdate'] = true;
+		$this->TestS3Upload->actsAs['Upload.S3Upload']['photo']['deleteOnUpdate'] = true;
 		$this->mockUpload();
 		$this->MockUpload->expects($this->once())->method('handleUploadedFile')->will($this->returnValue(true));
 		$this->MockUpload->expects($this->once())->method('unlink')->will($this->returnValue(true));
 
-		$existingRecord = $this->TestUpload->findById($this->data['test_update']['id']);
+		$existingRecord = $this->TestS3Upload->findById($this->data['test_update']['id']);
 		$this->MockUpload->expects($this->once())->method('unlink')->with(
-			$this->MockUpload->settings['TestUpload']['photo']['path'] . $existingRecord['TestUpload']['dir'] . '/' . $existingRecord['TestUpload']['photo']
+			$this->MockUpload->settings['TestS3Upload']['photo']['path'] . $existingRecord['TestS3Upload']['dir'] . '/' . $existingRecord['TestS3Upload']['photo']
 		);
 		$this->MockUpload->expects($this->once())->method('handleUploadedFile')->with(
-			$this->TestUpload->alias,
+			$this->TestS3Upload->alias,
 			'photo',
 			$this->data['test_update']['photo']['tmp_name'],
-			$this->MockUpload->settings['TestUpload']['photo']['path'] . $this->data['test_update']['id'] . '/' . $this->data['test_update']['photo']['name']
+			$this->MockUpload->settings['TestS3Upload']['photo']['path'] . $this->data['test_update']['id'] . '/' . $this->data['test_update']['photo']['name']
 		);
-		$result = $this->TestUpload->save($this->data['test_update']);
+		$result = $this->TestS3Upload->save($this->data['test_update']);
 		$this->assertInternalType('array', $result);
 	}
 
 	function testDeleteOnUpdateWithoutNewUpload() {
-		$this->TestUpload->actsAs['Upload.S3Upload']['photo']['deleteOnUpdate'] = true;
+		$this->TestS3Upload->actsAs['Upload.S3Upload']['photo']['deleteOnUpdate'] = true;
 		$this->mockUpload();
 		$this->MockUpload->expects($this->never())->method('unlink');
 		$this->MockUpload->expects($this->never())->method('handleUploadedFile');
-		$result = $this->TestUpload->save($this->data['test_update_other_field']);
+		$result = $this->TestS3Upload->save($this->data['test_update_other_field']);
 		$this->assertInternalType('array', $result);
-		$newRecord = $this->TestUpload->findById($this->TestUpload->id);
-		$this->assertEqual($this->data['test_update_other_field']['other_field'], $newRecord['TestUpload']['other_field']);
+		$newRecord = $this->TestS3Upload->findById($this->TestS3Upload->id);
+		$this->assertEqual($this->data['test_update_other_field']['other_field'], $newRecord['TestS3Upload']['other_field']);
 	}
 
 	function testUpdateWithoutNewUpload() {
 		$this->mockUpload();
 		$this->MockUpload->expects($this->never())->method('unlink');
 		$this->MockUpload->expects($this->never())->method('handleUploadedFile');
-		$result = $this->TestUpload->save($this->data['test_update_other_field']);
+		$result = $this->TestS3Upload->save($this->data['test_update_other_field']);
 		$this->assertInternalType('array', $result);
-		$newRecord = $this->TestUpload->findById($this->TestUpload->id);
-		$this->assertEqual($this->data['test_update_other_field']['other_field'], $newRecord['TestUpload']['other_field']);
+		$newRecord = $this->TestS3Upload->findById($this->TestS3Upload->id);
+		$this->assertEqual($this->data['test_update_other_field']['other_field'], $newRecord['TestS3Upload']['other_field']);
 	}
 
 	function testUnlinkFileOnDelete() {
 		$this->mockUpload();
 		$this->MockUpload->expects($this->once())->method('unlink')->will($this->returnValue(true));
-		$existingRecord = $this->TestUpload->findById($this->data['test_update']['id']);
+		$existingRecord = $this->TestS3Upload->findById($this->data['test_update']['id']);
 		$this->MockUpload->expects($this->once())->method('unlink')->with(
-			$this->MockUpload->settings['TestUpload']['photo']['path'] . $existingRecord['TestUpload']['dir'] . '/' . $existingRecord['TestUpload']['photo']
+			$this->MockUpload->settings['TestS3Upload']['photo']['path'] . $existingRecord['TestS3Upload']['dir'] . '/' . $existingRecord['TestS3Upload']['photo']
 		);
-		$result = $this->TestUpload->delete($this->data['test_update']['id']);
+		$result = $this->TestS3Upload->delete($this->data['test_update']['id']);
 		$this->assertTrue($result);
-		$this->assertEmpty($this->TestUpload->findById($this->data['test_update']['id']));
+		$this->assertEmpty($this->TestS3Upload->findById($this->data['test_update']['id']));
 	}
 
 
@@ -252,11 +252,11 @@ class S3UploadBehaviorTest extends CakeTestCase {
 			)
 		);
 
-		$existingRecord = $this->TestUpload->findById($data['id']);
+		$existingRecord = $this->TestS3Upload->findById($data['id']);
 		$this->MockUpload->expects($this->once())->method('unlink')->with(
-			$this->MockUpload->settings['TestUpload']['photo']['path'] . $existingRecord['TestUpload']['dir'] . '/' . $existingRecord['TestUpload']['photo']
+			$this->MockUpload->settings['TestS3Upload']['photo']['path'] . $existingRecord['TestS3Upload']['dir'] . '/' . $existingRecord['TestS3Upload']['photo']
 		);
-		$result = $this->TestUpload->save($data);
+		$result = $this->TestS3Upload->save($data);
 		$this->assertInternalType('array', $result);
 	}
 	
@@ -271,8 +271,8 @@ class S3UploadBehaviorTest extends CakeTestCase {
 			)
 		);
 
-		$existingRecord = $this->TestUpload->findById($data['id']);
-		$result = $this->TestUpload->save($data);
+		$existingRecord = $this->TestS3Upload->findById($data['id']);
+		$result = $this->TestS3Upload->save($data);
 		$this->assertInternalType('array', $result);
 	}
 	
@@ -287,8 +287,8 @@ class S3UploadBehaviorTest extends CakeTestCase {
 			)
 		);
 
-		$existingRecord = $this->TestUpload->findById($data['id']);
-		$result = $this->TestUpload->save($data);
+		$existingRecord = $this->TestS3Upload->findById($data['id']);
+		$result = $this->TestS3Upload->save($data);
 		$this->assertInternalType('array', $result);
 	}
 
@@ -298,11 +298,11 @@ class S3UploadBehaviorTest extends CakeTestCase {
 	function testMoveFileExecption() {
 		$this->mockUpload(array('handleUploadedFile'));
 		$this->MockUpload->expects($this->once())->method('handleUploadedFile')->will($this->returnValue(false));
-		$result = $this->TestUpload->save($this->data['test_ok']);
+		$result = $this->TestS3Upload->save($this->data['test_ok']);
 	}
 
 	function testIsUnderPhpSizeLimit() {
-		$this->TestUpload->validate = array(
+		$this->TestS3Upload->validate = array(
 			'photo' => array(
 				'isUnderPhpSizeLimit' => array(
 					'rule' => 'isUnderPhpSizeLimit',
@@ -320,22 +320,22 @@ class S3UploadBehaviorTest extends CakeTestCase {
 				'error' => UPLOAD_ERR_INI_SIZE,
 			)
 		);
-		$this->TestUpload->set($data);
-		$this->assertFalse($this->TestUpload->validates());
-		$this->assertEqual(1, count($this->TestUpload->validationErrors));
-		$this->assertEqual('isUnderPhpSizeLimit', current($this->TestUpload->validationErrors['photo']));
+		$this->TestS3Upload->set($data);
+		$this->assertFalse($this->TestS3Upload->validates());
+		$this->assertEqual(1, count($this->TestS3Upload->validationErrors));
+		$this->assertEqual('isUnderPhpSizeLimit', current($this->TestS3Upload->validationErrors['photo']));
 
-		$this->TestUpload->set($this->data['test_ok']);
-		$this->assertTrue($this->TestUpload->validates());
-		$this->assertEqual(0, count($this->TestUpload->validationErrors));
+		$this->TestS3Upload->set($this->data['test_ok']);
+		$this->assertTrue($this->TestS3Upload->validates());
+		$this->assertEqual(0, count($this->TestS3Upload->validationErrors));
 
-		$this->TestUpload->set($this->data['test_remove']);
-		$this->assertTrue($this->TestUpload->validates());
-		$this->assertEqual(0, count($this->TestUpload->validationErrors));
+		$this->TestS3Upload->set($this->data['test_remove']);
+		$this->assertTrue($this->TestS3Upload->validates());
+		$this->assertEqual(0, count($this->TestS3Upload->validationErrors));
 	}
 
 	function testIsUnderFormSizeLimit() {
-		$this->TestUpload->validate = array(
+		$this->TestS3Upload->validate = array(
 			'photo' => array(
 				'isUnderFormSizeLimit' => array(
 					'rule' => 'isUnderFormSizeLimit',
@@ -353,22 +353,22 @@ class S3UploadBehaviorTest extends CakeTestCase {
 				'error' => UPLOAD_ERR_FORM_SIZE,
 			)
 		);
-		$this->TestUpload->set($data);
-		$this->assertFalse($this->TestUpload->validates());
-		$this->assertEqual(1, count($this->TestUpload->validationErrors));
-		$this->assertEqual('isUnderFormSizeLimit', current($this->TestUpload->validationErrors['photo']));
+		$this->TestS3Upload->set($data);
+		$this->assertFalse($this->TestS3Upload->validates());
+		$this->assertEqual(1, count($this->TestS3Upload->validationErrors));
+		$this->assertEqual('isUnderFormSizeLimit', current($this->TestS3Upload->validationErrors['photo']));
 
-		$this->TestUpload->set($this->data['test_ok']);
-		$this->assertTrue($this->TestUpload->validates());
-		$this->assertEqual(0, count($this->TestUpload->validationErrors));
+		$this->TestS3Upload->set($this->data['test_ok']);
+		$this->assertTrue($this->TestS3Upload->validates());
+		$this->assertEqual(0, count($this->TestS3Upload->validationErrors));
 
-		$this->TestUpload->set($this->data['test_remove']);
-		$this->assertTrue($this->TestUpload->validates());
-		$this->assertEqual(0, count($this->TestUpload->validationErrors));
+		$this->TestS3Upload->set($this->data['test_remove']);
+		$this->assertTrue($this->TestS3Upload->validates());
+		$this->assertEqual(0, count($this->TestS3Upload->validationErrors));
 	}
 
 	function testIsCompletedUpload() {
-		$this->TestUpload->validate = array(
+		$this->TestS3Upload->validate = array(
 			'photo' => array(
 				'isCompletedUpload' => array(
 					'rule' => 'isCompletedUpload',
@@ -386,22 +386,22 @@ class S3UploadBehaviorTest extends CakeTestCase {
 				'error' => UPLOAD_ERR_PARTIAL,
 			)
 		);
-		$this->TestUpload->set($data);
-		$this->assertFalse($this->TestUpload->validates());
-		$this->assertEqual(1, count($this->TestUpload->validationErrors));
-		$this->assertEqual('isCompletedUpload', current($this->TestUpload->validationErrors['photo']));
+		$this->TestS3Upload->set($data);
+		$this->assertFalse($this->TestS3Upload->validates());
+		$this->assertEqual(1, count($this->TestS3Upload->validationErrors));
+		$this->assertEqual('isCompletedUpload', current($this->TestS3Upload->validationErrors['photo']));
 
-		$this->TestUpload->set($this->data['test_ok']);
-		$this->assertTrue($this->TestUpload->validates());
-		$this->assertEqual(0, count($this->TestUpload->validationErrors));
+		$this->TestS3Upload->set($this->data['test_ok']);
+		$this->assertTrue($this->TestS3Upload->validates());
+		$this->assertEqual(0, count($this->TestS3Upload->validationErrors));
 
-		$this->TestUpload->set($this->data['test_remove']);
-		$this->assertTrue($this->TestUpload->validates());
-		$this->assertEqual(0, count($this->TestUpload->validationErrors));
+		$this->TestS3Upload->set($this->data['test_remove']);
+		$this->assertTrue($this->TestS3Upload->validates());
+		$this->assertEqual(0, count($this->TestS3Upload->validationErrors));
 	}
 
 	function testIsFileUpload() {
-		$this->TestUpload->validate = array(
+		$this->TestS3Upload->validate = array(
 			'photo' => array(
 				'isFileUpload' => array(
 					'rule' => 'isFileUpload',
@@ -419,22 +419,22 @@ class S3UploadBehaviorTest extends CakeTestCase {
 				'error' => UPLOAD_ERR_NO_FILE,
 			)
 		);
-		$this->TestUpload->set($data);
-		$this->assertFalse($this->TestUpload->validates());
-		$this->assertEqual(1, count($this->TestUpload->validationErrors));
-		$this->assertEqual('isFileUpload', current($this->TestUpload->validationErrors['photo']));
+		$this->TestS3Upload->set($data);
+		$this->assertFalse($this->TestS3Upload->validates());
+		$this->assertEqual(1, count($this->TestS3Upload->validationErrors));
+		$this->assertEqual('isFileUpload', current($this->TestS3Upload->validationErrors['photo']));
 
-		$this->TestUpload->set($this->data['test_ok']);
-		$this->assertTrue($this->TestUpload->validates());
-		$this->assertEqual(0, count($this->TestUpload->validationErrors));
+		$this->TestS3Upload->set($this->data['test_ok']);
+		$this->assertTrue($this->TestS3Upload->validates());
+		$this->assertEqual(0, count($this->TestS3Upload->validationErrors));
 
-		$this->TestUpload->set($this->data['test_remove']);
-		$this->assertTrue($this->TestUpload->validates());
-		$this->assertEqual(0, count($this->TestUpload->validationErrors));
+		$this->TestS3Upload->set($this->data['test_remove']);
+		$this->assertTrue($this->TestS3Upload->validates());
+		$this->assertEqual(0, count($this->TestS3Upload->validationErrors));
 	}
 
 	function testTempDirExists() {
-		$this->TestUpload->validate = array(
+		$this->TestS3Upload->validate = array(
 			'photo' => array(
 				'tempDirExists' => array(
 					'rule' => 'tempDirExists',
@@ -452,22 +452,22 @@ class S3UploadBehaviorTest extends CakeTestCase {
 				'error' => UPLOAD_ERR_NO_TMP_DIR,
 			)
 		);
-		$this->TestUpload->set($data);
-		$this->assertFalse($this->TestUpload->validates());
-		$this->assertEqual(1, count($this->TestUpload->validationErrors));
-		$this->assertEqual('tempDirExists', current($this->TestUpload->validationErrors['photo']));
+		$this->TestS3Upload->set($data);
+		$this->assertFalse($this->TestS3Upload->validates());
+		$this->assertEqual(1, count($this->TestS3Upload->validationErrors));
+		$this->assertEqual('tempDirExists', current($this->TestS3Upload->validationErrors['photo']));
 
-		$this->TestUpload->set($this->data['test_ok']);
-		$this->assertTrue($this->TestUpload->validates());
-		$this->assertEqual(0, count($this->TestUpload->validationErrors));
+		$this->TestS3Upload->set($this->data['test_ok']);
+		$this->assertTrue($this->TestS3Upload->validates());
+		$this->assertEqual(0, count($this->TestS3Upload->validationErrors));
 
-		$this->TestUpload->set($this->data['test_remove']);
-		$this->assertTrue($this->TestUpload->validates());
-		$this->assertEqual(0, count($this->TestUpload->validationErrors));
+		$this->TestS3Upload->set($this->data['test_remove']);
+		$this->assertTrue($this->TestS3Upload->validates());
+		$this->assertEqual(0, count($this->TestS3Upload->validationErrors));
 	}
 
 	function testIsSuccessfulWrite() {
-		$this->TestUpload->validate = array(
+		$this->TestS3Upload->validate = array(
 			'photo' => array(
 				'isSuccessfulWrite' => array(
 					'rule' => 'isSuccessfulWrite',
@@ -485,22 +485,22 @@ class S3UploadBehaviorTest extends CakeTestCase {
 				'error' => UPLOAD_ERR_CANT_WRITE,
 			)
 		);
-		$this->TestUpload->set($data);
-		$this->assertFalse($this->TestUpload->validates());
-		$this->assertEqual(1, count($this->TestUpload->validationErrors));
-		$this->assertEqual('isSuccessfulWrite', current($this->TestUpload->validationErrors['photo']));
+		$this->TestS3Upload->set($data);
+		$this->assertFalse($this->TestS3Upload->validates());
+		$this->assertEqual(1, count($this->TestS3Upload->validationErrors));
+		$this->assertEqual('isSuccessfulWrite', current($this->TestS3Upload->validationErrors['photo']));
 
-		$this->TestUpload->set($this->data['test_ok']);
-		$this->assertTrue($this->TestUpload->validates());
-		$this->assertEqual(0, count($this->TestUpload->validationErrors));
+		$this->TestS3Upload->set($this->data['test_ok']);
+		$this->assertTrue($this->TestS3Upload->validates());
+		$this->assertEqual(0, count($this->TestS3Upload->validationErrors));
 
-		$this->TestUpload->set($this->data['test_remove']);
-		$this->assertTrue($this->TestUpload->validates());
-		$this->assertEqual(0, count($this->TestUpload->validationErrors));
+		$this->TestS3Upload->set($this->data['test_remove']);
+		$this->assertTrue($this->TestS3Upload->validates());
+		$this->assertEqual(0, count($this->TestS3Upload->validationErrors));
 	}
 
 	function testNoPhpExtensionErrors() {
-		$this->TestUpload->validate = array(
+		$this->TestS3Upload->validate = array(
 			'photo' => array(
 				'noPhpExtensionErrors' => array(
 					'rule' => 'noPhpExtensionErrors',
@@ -518,29 +518,29 @@ class S3UploadBehaviorTest extends CakeTestCase {
 				'error' => UPLOAD_ERR_EXTENSION,
 			)
 		);
-		$this->TestUpload->set($data);
-		$this->assertFalse($this->TestUpload->validates());
-		$this->assertEqual(1, count($this->TestUpload->validationErrors));
-		$this->assertEqual('noPhpExtensionErrors', current($this->TestUpload->validationErrors['photo']));
+		$this->TestS3Upload->set($data);
+		$this->assertFalse($this->TestS3Upload->validates());
+		$this->assertEqual(1, count($this->TestS3Upload->validationErrors));
+		$this->assertEqual('noPhpExtensionErrors', current($this->TestS3Upload->validationErrors['photo']));
 
-		$this->TestUpload->set($this->data['test_ok']);
-		$this->assertTrue($this->TestUpload->validates());
-		$this->assertEqual(0, count($this->TestUpload->validationErrors));
+		$this->TestS3Upload->set($this->data['test_ok']);
+		$this->assertTrue($this->TestS3Upload->validates());
+		$this->assertEqual(0, count($this->TestS3Upload->validationErrors));
 
-		$this->TestUpload->set($this->data['test_remove']);
-		$this->assertTrue($this->TestUpload->validates());
-		$this->assertEqual(0, count($this->TestUpload->validationErrors));
+		$this->TestS3Upload->set($this->data['test_remove']);
+		$this->assertTrue($this->TestS3Upload->validates());
+		$this->assertEqual(0, count($this->TestS3Upload->validationErrors));
 	}
 
 	function testIsValidMimeType() {
-		$this->TestUpload->Behaviors->detach('Upload.S3Upload');
-		$this->TestUpload->Behaviors->attach('Upload.S3Upload', array(
+		$this->TestS3Upload->Behaviors->detach('Upload.S3Upload');
+		$this->TestS3Upload->Behaviors->attach('Upload.S3Upload', array(
 			'photo' => array(
 				'mimetypes' => array('image/bmp', 'image/jpeg')
 			)
 		));
 
-		$this->TestUpload->validate = array(
+		$this->TestS3Upload->validate = array(
 			'photo' => array(
 				'isValidMimeType' => array(
 					'rule' => 'isValidMimeType',
@@ -549,27 +549,27 @@ class S3UploadBehaviorTest extends CakeTestCase {
 			)
 		);
 
-		$this->TestUpload->set($this->data['test_ok']);
-		$this->assertFalse($this->TestUpload->validates());
-		$this->assertEqual(1, count($this->TestUpload->validationErrors));
-		$this->assertEqual('isValidMimeType', current($this->TestUpload->validationErrors['photo']));
+		$this->TestS3Upload->set($this->data['test_ok']);
+		$this->assertFalse($this->TestS3Upload->validates());
+		$this->assertEqual(1, count($this->TestS3Upload->validationErrors));
+		$this->assertEqual('isValidMimeType', current($this->TestS3Upload->validationErrors['photo']));
 
-		$this->TestUpload->Behaviors->detach('Upload.S3Upload');
-		$this->TestUpload->Behaviors->attach('Upload.S3Upload', array(
+		$this->TestS3Upload->Behaviors->detach('Upload.S3Upload');
+		$this->TestS3Upload->Behaviors->attach('Upload.S3Upload', array(
 			'photo' => array(
 				'mimetypes' => array('image/png', 'image/jpeg')
 			)
 		));
 
-		$this->TestUpload->set($this->data['test_ok']);
-		$this->assertTrue($this->TestUpload->validates());
-		$this->assertEqual(0, count($this->TestUpload->validationErrors));
+		$this->TestS3Upload->set($this->data['test_ok']);
+		$this->assertTrue($this->TestS3Upload->validates());
+		$this->assertEqual(0, count($this->TestS3Upload->validationErrors));
 
-		$this->TestUpload->set($this->data['test_remove']);
-		$this->assertTrue($this->TestUpload->validates());
-		$this->assertEqual(0, count($this->TestUpload->validationErrors));
+		$this->TestS3Upload->set($this->data['test_remove']);
+		$this->assertTrue($this->TestS3Upload->validates());
+		$this->assertEqual(0, count($this->TestS3Upload->validationErrors));
 
-		$this->TestUpload->validate = array(
+		$this->TestS3Upload->validate = array(
 			'photo' => array(
 				'isValidMimeType' => array(
 					'rule' => array('isValidMimeType', 'image/png'),
@@ -578,20 +578,20 @@ class S3UploadBehaviorTest extends CakeTestCase {
 			)
 		);
 
-		$this->TestUpload->set($this->data['test_ok']);
-		$this->assertTrue($this->TestUpload->validates());
-		$this->assertEqual(0, count($this->TestUpload->validationErrors));
+		$this->TestS3Upload->set($this->data['test_ok']);
+		$this->assertTrue($this->TestS3Upload->validates());
+		$this->assertEqual(0, count($this->TestS3Upload->validationErrors));
 	}
 
 	function testIsValidExtension() {
-		$this->TestUpload->Behaviors->detach('Upload.S3Upload');
-		$this->TestUpload->Behaviors->attach('Upload.S3Upload', array(
+		$this->TestS3Upload->Behaviors->detach('Upload.S3Upload');
+		$this->TestS3Upload->Behaviors->attach('Upload.S3Upload', array(
 			'photo' => array(
 				'extensions' => array('jpeg', 'bmp')
 			)
 		));
 
-		$this->TestUpload->validate = array(
+		$this->TestS3Upload->validate = array(
 			'photo' => array(
 				'isValidExtension' => array(
 					'rule' => 'isValidExtension',
@@ -600,46 +600,46 @@ class S3UploadBehaviorTest extends CakeTestCase {
 			)
 		);
 
-		$this->TestUpload->set($this->data['test_ok']);
-		$this->assertFalse($this->TestUpload->validates());
-		$this->assertEqual(1, count($this->TestUpload->validationErrors));
-		$this->assertEqual('isValidExtension', current($this->TestUpload->validationErrors['photo']));
+		$this->TestS3Upload->set($this->data['test_ok']);
+		$this->assertFalse($this->TestS3Upload->validates());
+		$this->assertEqual(1, count($this->TestS3Upload->validationErrors));
+		$this->assertEqual('isValidExtension', current($this->TestS3Upload->validationErrors['photo']));
 
 		$data = $this->data['test_ok'];
 		$data['photo']['name'] = 'Photo.bmp';
-		$this->TestUpload->set($data);
-		$this->assertTrue($this->TestUpload->validates());
-		$this->assertEqual(0, count($this->TestUpload->validationErrors));
+		$this->TestS3Upload->set($data);
+		$this->assertTrue($this->TestS3Upload->validates());
+		$this->assertEqual(0, count($this->TestS3Upload->validationErrors));
 
-		$this->TestUpload->Behaviors->detach('Upload.S3Upload');
-		$this->TestUpload->Behaviors->attach('Upload.S3Upload', array(
+		$this->TestS3Upload->Behaviors->detach('Upload.S3Upload');
+		$this->TestS3Upload->Behaviors->attach('Upload.S3Upload', array(
 			'photo'
 		));
 
-		$this->TestUpload->validate['photo']['isValidExtension']['rule'] = array('isValidExtension', 'jpg');
-		$this->TestUpload->set($this->data['test_ok']);
-		$this->assertFalse($this->TestUpload->validates());
-		$this->assertEqual(1, count($this->TestUpload->validationErrors));
-		$this->assertEqual('isValidExtension', current($this->TestUpload->validationErrors['photo']));
+		$this->TestS3Upload->validate['photo']['isValidExtension']['rule'] = array('isValidExtension', 'jpg');
+		$this->TestS3Upload->set($this->data['test_ok']);
+		$this->assertFalse($this->TestS3Upload->validates());
+		$this->assertEqual(1, count($this->TestS3Upload->validationErrors));
+		$this->assertEqual('isValidExtension', current($this->TestS3Upload->validationErrors['photo']));
 
-		$this->TestUpload->validate['photo']['isValidExtension']['rule'] = array('isValidExtension', array('jpg'));
-		$this->TestUpload->set($this->data['test_ok']);
-		$this->assertFalse($this->TestUpload->validates());
-		$this->assertEqual(1, count($this->TestUpload->validationErrors));
-		$this->assertEqual('isValidExtension', current($this->TestUpload->validationErrors['photo']));
+		$this->TestS3Upload->validate['photo']['isValidExtension']['rule'] = array('isValidExtension', array('jpg'));
+		$this->TestS3Upload->set($this->data['test_ok']);
+		$this->assertFalse($this->TestS3Upload->validates());
+		$this->assertEqual(1, count($this->TestS3Upload->validationErrors));
+		$this->assertEqual('isValidExtension', current($this->TestS3Upload->validationErrors['photo']));
 
-		$this->TestUpload->validate['photo']['isValidExtension']['rule'] = array('isValidExtension', array('jpg', 'bmp'));
-		$this->TestUpload->set($this->data['test_ok']);
-		$this->assertFalse($this->TestUpload->validates());
-		$this->assertEqual(1, count($this->TestUpload->validationErrors));
-		$this->assertEqual('isValidExtension', current($this->TestUpload->validationErrors['photo']));
+		$this->TestS3Upload->validate['photo']['isValidExtension']['rule'] = array('isValidExtension', array('jpg', 'bmp'));
+		$this->TestS3Upload->set($this->data['test_ok']);
+		$this->assertFalse($this->TestS3Upload->validates());
+		$this->assertEqual(1, count($this->TestS3Upload->validationErrors));
+		$this->assertEqual('isValidExtension', current($this->TestS3Upload->validationErrors['photo']));
 
-		$this->TestUpload->validate['photo']['isValidExtension']['rule'] = array('isValidExtension', array('jpg', 'bmp', 'png'));
-		$this->TestUpload->set($this->data['test_ok']);
-		$this->assertTrue($this->TestUpload->validates());
-		$this->assertEqual(0, count($this->TestUpload->validationErrors));
+		$this->TestS3Upload->validate['photo']['isValidExtension']['rule'] = array('isValidExtension', array('jpg', 'bmp', 'png'));
+		$this->TestS3Upload->set($this->data['test_ok']);
+		$this->assertTrue($this->TestS3Upload->validates());
+		$this->assertEqual(0, count($this->TestS3Upload->validationErrors));
 
-		$this->TestUpload->validate = array(
+		$this->TestS3Upload->validate = array(
 			'photo' => array(
 				'isFileUpload' => array(
 					'rule' => 'isFileUpload',
@@ -652,25 +652,25 @@ class S3UploadBehaviorTest extends CakeTestCase {
 			)
 		);
 
-		$this->TestUpload->set($this->data['test_ok']);
-		$this->assertFalse($this->TestUpload->validates());
-		$this->assertEqual(1, count($this->TestUpload->validationErrors));
-		$this->assertEqual('isValidExtension', current($this->TestUpload->validationErrors['photo']));
+		$this->TestS3Upload->set($this->data['test_ok']);
+		$this->assertFalse($this->TestS3Upload->validates());
+		$this->assertEqual(1, count($this->TestS3Upload->validationErrors));
+		$this->assertEqual('isValidExtension', current($this->TestS3Upload->validationErrors['photo']));
 
 		$data['photo']['name'] = 'Photo.jpg';
-		$this->TestUpload->set($this->data['test_ok']);
-		$this->assertFalse($this->TestUpload->validates());
-		$this->assertEqual(1, count($this->TestUpload->validationErrors));
-		$this->assertEqual('isValidExtension', current($this->TestUpload->validationErrors['photo']));
+		$this->TestS3Upload->set($this->data['test_ok']);
+		$this->assertFalse($this->TestS3Upload->validates());
+		$this->assertEqual(1, count($this->TestS3Upload->validationErrors));
+		$this->assertEqual('isValidExtension', current($this->TestS3Upload->validationErrors['photo']));
 
-		$this->TestUpload->set($this->data['test_remove']);
-		$this->assertTrue($this->TestUpload->validates());
-		$this->assertEqual(0, count($this->TestUpload->validationErrors));
+		$this->TestS3Upload->set($this->data['test_remove']);
+		$this->assertTrue($this->TestS3Upload->validates());
+		$this->assertEqual(0, count($this->TestS3Upload->validationErrors));
 	}
 
 	/* need to rewrite for S3 
 	function testIsWritable() {
-		$this->TestUpload->validate = array(
+		$this->TestS3Upload->validate = array(
 			'photo' => array(
 				'isWritable' => array(
 					'rule' => 'isWritable',
@@ -679,17 +679,17 @@ class S3UploadBehaviorTest extends CakeTestCase {
 			)
 		);
 
-		$this->TestUpload->set($this->data['test_ok']);
+		$this->TestS3Upload->set($this->data['test_ok']);
 		debug($this->data['test_ok']);
-		$this->TestUpload->
-		//$this->TestUpload->log($this->TestUpload);
-		$this->assertFalse($this->TestUpload->validates());
+		$this->TestS3Upload->
+		//$this->TestS3Upload->log($this->TestS3Upload);
+		$this->assertFalse($this->TestS3Upload->validates());
 
-		$this->assertEqual(1, count($this->TestUpload->validationErrors));
-		$this->assertEqual('isWritable', current($this->TestUpload->validationErrors['photo']));
+		$this->assertEqual(1, count($this->TestS3Upload->validationErrors));
+		$this->assertEqual('isWritable', current($this->TestS3Upload->validationErrors['photo']));
 
-		$this->TestUpload->Behaviors->detach('Upload.S3Upload');
-		$this->TestUpload->Behaviors->attach('Upload.S3Upload', array(
+		$this->TestS3Upload->Behaviors->detach('Upload.S3Upload');
+		$this->TestS3Upload->Behaviors->attach('Upload.S3Upload', array(
 			'photo' => array(
 				'path' => TMP
 			)
@@ -704,17 +704,17 @@ class S3UploadBehaviorTest extends CakeTestCase {
 				'error' => UPLOAD_ERR_OK,
 			)
 		);
-		$this->TestUpload->set($data);
-		$this->assertTrue($this->TestUpload->validates());
-		$this->assertEqual(0, count($this->TestUpload->validationErrors));
+		$this->TestS3Upload->set($data);
+		$this->assertTrue($this->TestS3Upload->validates());
+		$this->assertEqual(0, count($this->TestS3Upload->validationErrors));
 
-		$this->TestUpload->set($this->data['test_remove']);
-		$this->assertTrue($this->TestUpload->validates());
-		$this->assertEqual(0, count($this->TestUpload->validationErrors));
+		$this->TestS3Upload->set($this->data['test_remove']);
+		$this->assertTrue($this->TestS3Upload->validates());
+		$this->assertEqual(0, count($this->TestS3Upload->validationErrors));
 	}
 
 	function testIsValidDir() {
-		$this->TestUpload->validate = array(
+		$this->TestS3Upload->validate = array(
 			'photo' => array(
 				'isValidDir' => array(
 					'rule' => 'isValidDir',
@@ -723,14 +723,14 @@ class S3UploadBehaviorTest extends CakeTestCase {
 			)
 		);
 
-		$this->TestUpload->set($this->data['test_ok']);
-		$this->assertFalse($this->TestUpload->validates());
+		$this->TestS3Upload->set($this->data['test_ok']);
+		$this->assertFalse($this->TestS3Upload->validates());
 
-		$this->assertEqual(1, count($this->TestUpload->validationErrors));
-		$this->assertEqual('isValidDir', current($this->TestUpload->validationErrors['photo']));
+		$this->assertEqual(1, count($this->TestS3Upload->validationErrors));
+		$this->assertEqual('isValidDir', current($this->TestS3Upload->validationErrors['photo']));
 
-		$this->TestUpload->Behaviors->detach('Upload.S3Upload');
-		$this->TestUpload->Behaviors->attach('Upload.S3Upload', array(
+		$this->TestS3Upload->Behaviors->detach('Upload.S3Upload');
+		$this->TestS3Upload->Behaviors->attach('Upload.S3Upload', array(
 			'photo' => array(
 				'path' => TMP
 			)
@@ -745,76 +745,76 @@ class S3UploadBehaviorTest extends CakeTestCase {
 				'error' => UPLOAD_ERR_OK,
 			)
 		);
-		$this->TestUpload->set($data);
-		$this->assertTrue($this->TestUpload->validates());
-		$this->assertEqual(0, count($this->TestUpload->validationErrors));
+		$this->TestS3Upload->set($data);
+		$this->assertTrue($this->TestS3Upload->validates());
+		$this->assertEqual(0, count($this->TestS3Upload->validationErrors));
 
-		$this->TestUpload->set($this->data['test_remove']);
-		$this->assertTrue($this->TestUpload->validates());
-		$this->assertEqual(0, count($this->TestUpload->validationErrors));
+		$this->TestS3Upload->set($this->data['test_remove']);
+		$this->assertTrue($this->TestS3Upload->validates());
+		$this->assertEqual(0, count($this->TestS3Upload->validationErrors));
 	}*/
 
 	function testIsImage() {
-		$this->TestUpload->Behaviors->detach('Upload.S3Upload');
-		$this->TestUpload->Behaviors->attach('Upload.S3Upload', array(
+		$this->TestS3Upload->Behaviors->detach('Upload.S3Upload');
+		$this->TestS3Upload->Behaviors->attach('Upload.S3Upload', array(
 			'photo' => array(
 				'mimetypes' => array('image/bmp', 'image/jpeg')
 			)
 		));
 
-		$result = $this->TestUpload->Behaviors->S3Upload->_isImage($this->TestUpload, 'image/bmp');
+		$result = $this->TestS3Upload->Behaviors->S3Upload->_isImage($this->TestS3Upload, 'image/bmp');
 		$this->assertTrue($result);
 
-		$result = $this->TestUpload->Behaviors->S3Upload->_isImage($this->TestUpload, 'image/jpeg');
+		$result = $this->TestS3Upload->Behaviors->S3Upload->_isImage($this->TestS3Upload, 'image/jpeg');
 		$this->assertTrue($result);
 
-		$result = $this->TestUpload->Behaviors->S3Upload->_isImage($this->TestUpload, 'application/zip');
+		$result = $this->TestS3Upload->Behaviors->S3Upload->_isImage($this->TestS3Upload, 'application/zip');
 		$this->assertFalse($result);
 	}
 
 	function testIsMedia() {
-		$this->TestUpload->Behaviors->detach('Upload.S3Upload');
-		$this->TestUpload->Behaviors->attach('Upload.S3Upload', array(
+		$this->TestS3Upload->Behaviors->detach('Upload.S3Upload');
+		$this->TestS3Upload->Behaviors->attach('Upload.S3Upload', array(
 			'pdf_file' => array(
 				'mimetypes' => array('application/pdf', 'application/postscript')
 			)
 		));
 
-		$result = $this->TestUpload->Behaviors->S3Upload->_isMedia($this->TestUpload, 'application/pdf');
+		$result = $this->TestS3Upload->Behaviors->S3Upload->_isMedia($this->TestS3Upload, 'application/pdf');
 		$this->assertTrue($result);
 
-		$result = $this->TestUpload->Behaviors->S3Upload->_isMedia($this->TestUpload, 'application/postscript');
+		$result = $this->TestS3Upload->Behaviors->S3Upload->_isMedia($this->TestS3Upload, 'application/postscript');
 		$this->assertTrue($result);
 
-		$result = $this->TestUpload->Behaviors->S3Upload->_isMedia($this->TestUpload, 'application/zip');
+		$result = $this->TestS3Upload->Behaviors->S3Upload->_isMedia($this->TestS3Upload, 'application/zip');
 		$this->assertFalse($result);
 
-		$result = $this->TestUpload->Behaviors->S3Upload->_isMedia($this->TestUpload, 'image/jpeg');
+		$result = $this->TestS3Upload->Behaviors->S3Upload->_isMedia($this->TestS3Upload, 'image/jpeg');
 		$this->assertFalse($result);
 	}
 
 	function testGetPathFlat() {
 		$basePath = 'tests' . '/' . 'path' . '/' . 'flat' . '/';
-		$result = $this->TestUpload->Behaviors->S3Upload->_getPathFlat($this->TestUpload, 'photo', TMP . $basePath);
+		$result = $this->TestS3Upload->Behaviors->S3Upload->_getPathFlat($this->TestS3Upload, 'photo', TMP . $basePath);
 
 		$this->assertInternalType('string', $result);
 		$this->assertEqual(0, strlen($result));
 	}
 
 	function testGetPathPrimaryKey() {
-		$this->TestUpload->id = 5;
+		$this->TestS3Upload->id = 5;
 		$basePath = 'tests' . '/' . 'path' . '/' . 'primaryKey' . '/';
-		$result = $this->TestUpload->Behaviors->S3Upload->_getPathPrimaryKey($this->TestUpload, 'photo', TMP . $basePath);
+		$result = $this->TestS3Upload->Behaviors->S3Upload->_getPathPrimaryKey($this->TestS3Upload, 'photo', TMP . $basePath);
 
 		$this->assertInternalType('integer', $result);
 		$this->assertEqual(1, strlen($result));
-		$this->assertEqual($result, $this->TestUpload->id);
+		$this->assertEqual($result, $this->TestS3Upload->id);
 		$this->assertTrue(is_dir(TMP . $basePath . $result));
 	}
 
 	function testGetPathRandom() {
 		$basePath = 'tests' . '/' . 'path' . '/' . 'random' . '/';
-		$result = $this->TestUpload->Behaviors->S3Upload->_getPathRandom($this->TestUpload, 'photo', TMP . $basePath);
+		$result = $this->TestS3Upload->Behaviors->S3Upload->_getPathRandom($this->TestS3Upload, 'photo', TMP . $basePath);
 
 		$this->assertInternalType('string', $result);
 		$this->assertEqual(8, strlen($result));
@@ -822,27 +822,27 @@ class S3UploadBehaviorTest extends CakeTestCase {
 	}
 
 	function testReplacePath() {
-		$result = $this->TestUpload->Behaviors->S3Upload->_path($this->TestUpload, 'photo', array(
+		$result = $this->TestS3Upload->Behaviors->S3Upload->_path($this->TestS3Upload, 'photo', array(
 			'path' => 'files/{model}\\{field}{DS}',
 		));
 
 		$this->assertInternalType('string', $result);
-		$this->assertEqual('files/test_upload/photo/', $result);
+		$this->assertEqual('files/test_s3_upload/photo/', $result);
 
-		$result = $this->TestUpload->Behaviors->S3Upload->_path($this->TestUpload, 'photo', array(
+		$result = $this->TestS3Upload->Behaviors->S3Upload->_path($this->TestS3Upload, 'photo', array(
 			'path' => 'files//{size}/{model}\\{field}{DS}{geometry}///',
 		));
 
 		$this->assertInternalType('string', $result);
-		$this->assertEqual('files/{size}/test_upload/photo/{geometry}/', $result);
+		$this->assertEqual('files/{size}/test_s3_upload/photo/{geometry}/', $result);
 
 
-		$result = $this->TestUpload->Behaviors->S3Upload->_path($this->TestUpload, 'photo', array(
+		$result = $this->TestS3Upload->Behaviors->S3Upload->_path($this->TestS3Upload, 'photo', array(
 			'isThumbnail' => false,
 			'path' => 'files//{size}/{model}\\\\{field}{DS}{geometry}///',
 		));
 
 		$this->assertInternalType('string', $result);
-		$this->assertEqual('files/test_upload/photo/', $result);
+		$this->assertEqual('files/test_s3_upload/photo/', $result);
 	}
 }
